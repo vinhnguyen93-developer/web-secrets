@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const encrypt = require("mongoose-encryption");
 
 const app = express();
 
@@ -12,10 +13,14 @@ mongoose.set('useFindAndModify', false);
 
 mongoose.connect("mongodb+srv://VinhNguyen:vinhke1993@vinhnguyen.qqlpq.mongodb.net/userDB", { useNewUrlParser: true, useUnifiedTopology: true });
 
-const userSchema = {
+const userSchema = new mongoose.Schema({
     email: String,
     password: String
-};
+});
+
+const secret = "Thisisourlittlesecret.";
+
+userSchema.plugin(encrypt, {secret: secret, encryptedFields: ["password"]});
 
 const User = new mongoose.model("User", userSchema);
 
