@@ -33,7 +33,8 @@ const userSchema = new mongoose.Schema({
     email: String,
     password: String,
     googleId: String,
-    facebookId: String
+    facebookId: String,
+    secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -94,14 +95,15 @@ app.get("/auth/google/secrets",
 });
 
 app.get("/auth/facebook",
-  passport.authenticate("facebook"));
+  passport.authenticate("facebook")
+);
 
 app.get("/auth/facebook/secrets",
   passport.authenticate("facebook", { failureRedirect: "/login" }),
   function(req, res) {
     // Successful authentication, redirect to secrets.
     res.redirect("/secrets");
-  });
+});
 
 
 app.get("/login", function (req, res) {
@@ -113,8 +115,20 @@ app.get("/register", function (req, res) {
 })
 
 app.get("/secrets", function(req, res) {
+    User.find({"secret": {$ne: null}}, function(err, foundUsers) {
+        if(err) {
+            console.log(err);
+        } else {
+            if(foundUsers) {
+                res.render("secrets", {userWithSecrets: foundUsers});
+            }
+        }
+    });
+})
+
+app.get("/submit", function(req, res) {
     if(req.isAuthenticated()) {
-        res.render("secrets");
+        res.render("submit");
     } else {
         res.redirect("/login");
     }
@@ -123,6 +137,27 @@ app.get("/secrets", function(req, res) {
 app.get("/logout", function(req, res) {
     req.logout();
     res.redirect("/");
+})
+
+app.post("/submit", function(req, res) {
+    const submittedSecret = req.body.secret;
+
+    User.findById(req.user.id, function(err, foundUser) {
+        if(err) {
+            console.log(err);
+        } else {
+            if(foundUser) {
+                foundUser.secret = submittedSecret;
+                foundUser.save(function(err) {
+                    if(err) {
+                        console.log(err);
+                    } else {
+                        res.redirect("/secrets");
+                    }
+                });
+            }
+        }
+    });
 })
 
 app.post("/register", function (req, res) {
